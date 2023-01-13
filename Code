@@ -1,0 +1,65 @@
+int n = 22;  // number of drivers
+int m = 28;  // number of work days
+int t = 13;  // number of routes
+range surucu = 1..n;  // sürücü indeksi
+range gun = 1..m;  // gün indeksi
+range rota = 1..t;  // rota indeksi
+
+int D[rota][gun] = ...;  // number of drivers on j. day at k. route
+float S[rota] = ...;  // drive time for k. route
+int O[rota] = ...;  // middle range drives
+
+dvar boolean x[surucu][gun][rota];  // 1 when i. driver works at k. route on j. day, 0 otherwise
+dvar int+ y[surucu][gun];
+dvar boolean h[surucu][gun];  // 1 when i. driver has an off day on j. day, 0 otherwise
+dvar float+ C ;  // maximum driving time for any driver
+
+// objective function: minimize total driving time for all drivers
+minimize C;   
+// constraints:
+
+// number of drivers assigned to each route on each day is equal to the capacity
+subject to {
+kapasite:
+  forall(j in gun, k in rota)
+    sum(i in surucu) x[i][j][k] == D[k][j];
+
+
+// each driver can only work on one route per day
+atamasayisi:
+  forall(i in surucu, j in gun)
+    sum(k in rota) x[i][j][k] + h[i][j] <= 1;
+
+
+// drivers have at least one off day in a week
+izin:
+  forall(i in surucu, j in gun : j<=m-6)
+    sum(j2 in gun : j2>=j && j2<=j+6) h[i][j2] >= 1;
+
+
+// drivers can't work on two consecutive days on long range drives
+uzunyol2:
+    forall(i in surucu, j in gun :j<=n-2)
+      sum (j2 in gun : j2>=j && j2 <=j+2, k in rota: O[k]== 1 ) x[i][j2][k]<=1;
+
+
+
+// total driving time for each driver does not exceed the maximum allowed driving time
+enfazlasurus:
+  forall(i in surucu)
+    sum(j in gun, k in rota) x[i][j][k] * S[k] <= C;
+
+surus1:
+    forall(i in surucu)
+      sum(j in gun: j<=14 , k in rota) x[i][j][k] * S[k] <= 90;
+
+surus2:
+        forall(i in surucu)
+      sum(j in gun: j>=15 , k in rota) x[i][j][k] * S[k] <= 90;
+
+rotatamasi:
+ forall(i in surucu, j in gun)
+   sum(k in rota ) k* x[i][j][k] == y[i][j];
+
+
+}
